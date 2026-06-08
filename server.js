@@ -6,8 +6,15 @@
 const express = require('express');
 const path = require('path');
 const crypto = require('crypto');
+const fs = require('fs');
 
 const app = express();
+
+// Find index.html whether it's in ./public/ or at the repo root.
+const PUBLIC_DIR = fs.existsSync(path.join(__dirname, 'public', 'index.html'))
+  ? path.join(__dirname, 'public')
+  : __dirname;
+const INDEX_FILE = path.join(PUBLIC_DIR, 'index.html');
 app.set('trust proxy', 1);
 app.use(express.urlencoded({ extended: false }));
 
@@ -79,7 +86,12 @@ app.get('/logout', (req, res) => {
 
 // gate everything else behind the cookie
 app.use((req, res, next) => authed(req) ? next() : res.status(401).send(loginPage('')));
-app.use(express.static(path.join(__dirname, 'public'), { extensions: ['html'] }));
+app.use(express.static(PUBLIC_DIR, { extensions: ['html'] }));
+// any authed route falls back to the dashboard (handles "/" and unknown paths)
+app.get('*', (req, res) => {
+  if (fs.existsSync(INDEX_FILE)) return res.sendFile(INDEX_FILE);
+  res.status(500).send('Dashboard file (index.html) not found in the deploy.');
+});
 
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`Event dashboard listening on ${PORT}`));
+app.listen(PORT, () => console.log(`Event dashboard listening on ${PORT} — serving from ${PUBLIC_DIR}`));
