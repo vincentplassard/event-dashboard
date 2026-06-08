@@ -242,7 +242,8 @@ const COSTS={'dbgo-nyc':7490,'global-abm':8988,'vegas':31458,'b2bmx':13482,'forr
 const COSTMETA={'dbgo-nyc':'$10,000 silver rate × 0.749 = £7,490 (no travel uplift — see note)','global-abm':'$12,000 (London) × 0.749 = £8,988','vegas':'$35,000 + 20% travel = $42,000 × 0.749 = £31,458','b2bmx':'$15,000 bronze + 20% travel = $18,000 × 0.749 = £13,482','forrester':'$20,000 + 20% travel = $24,000 × 0.749 = £17,976','dbgo-london':'$12,500 (London) × 0.749 = £9,363'};
 
 const gbp=n=>'£'+Math.round(n).toLocaleString('en-GB');
-const cat=x=>!x.d?'none':(x.k?'inf':((STAGE[x.s]||{}).c||'open'));
+// table/chip bucket: anything with a deal that isn't won/lost/influenced is "open" (incl. Demo Booked, Analysis, Pledge…)
+const cat=x=>{if(!x.d)return 'none';if(x.k)return 'inf';const c=(STAGE[x.s]||{}).c;return c==='won'?'won':(c==='lost'?'lost':'open');};
 
 function metrics(ev){
  let m={meetings:ev.accounts.length,opps:0,won:0,lost:0,open:0,qual:0,revCreated:0,openPipe:0,lostPipe:0,infRev:0,infPipe:0,weighted:0};
