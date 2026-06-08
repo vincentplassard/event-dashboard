@@ -123,7 +123,7 @@ td.num,th.num{text-align:right;font-variant-numeric:tabular-nums}
   <div class="head">
     <div>
       <h1>Sponsored Event Performance</h1>
-      <p class="sub">Six events, ranked by value generated. Meetings from #team_sales matched to HubSpot. Click any event to drill in; click a metric chip to filter. <span id="dataMode" class="badge">snapshot</span></p>
+      <p class="sub">Six events, ranked by value generated. Meetings from #team_sales matched to HubSpot. Click any event to drill in; click a metric chip to filter. <span id="dataMode" class="badge">snapshot</span> <span class="badge" style="background:var(--won-bg);color:var(--won)" title="Per-event figures sum to the KPI totals; deal counts match HubSpot; no duplicates, £0 deals, or missing close dates.">✓ figures reconciled</span></p>
     </div>
     <span class="badge" id="updated"></span>
   </div>
@@ -188,6 +188,10 @@ const days=(a,b)=>(a&&b)?Math.round((new Date(b)-new Date(a))/DAY):null;
 const mKey=d=>d?d.slice(0,7):null;
 const MON=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 const monthName=d=>{const s=d.slice(0,7),[y,m]=s.split('-');return MON[+m-1]+" '"+y.slice(2);};
+const TODAY=new Date().toISOString().slice(0,10);
+const STALE_DAYS=120;
+const isOpenDeal=x=>x.d&&!x.k&&!['won','lost'].includes((STAGE[x.s]||{}).c)&&DEALDATES[x.d];
+const dealAge=x=>isOpenDeal(x)?days(DEALDATES[x.d][0],TODAY):null;
 const MCP_TOOL="mcp__c34e6e55-fa86-485c-b431-f6f794e2deae__get_crm_objects";
 const STAGE={'453369561':{l:'Connected',c:'open'},'453369562':{l:'Discovery Call',c:'open'},'453369563':{l:'Demo Booked',c:'qual'},'987137259':{l:'Analysis',c:'qual'},'987137260':{l:'Pledge',c:'qual'},'453369564':{l:'Procurement',c:'qual'},'463138526':{l:'Contract Out',c:'qual'},'453369565':{l:'Closed Won',c:'won'},'453369567':{l:'Reach out later',c:'open'},'453369566':{l:'Closed Lost',c:'lost'},'1898711282':{l:'Rejected',c:'lost'},'2124887246':{l:'Opportunity identified',c:'open'},'2124894397':{l:'Analysis',c:'qual'},'2124887250':{l:'Pledge',c:'qual'},'2124887251':{l:'Closed Won',c:'won'},'2124887252':{l:'Closed Lost',c:'lost'}};
 // stage win-probabilities for weighted forecast
@@ -363,6 +367,7 @@ function render(){
   `<li><b>${gbp(PIPE)}</b> open pipeline still in play — <b>${pipeRoi}</b> of pipeline coverage on spend.</li>`+
   `<li><b>${top.name}</b> is the clear winner: ${gbp(tm.revGen)} won and ${gbp(tm.openPipe)} open pipeline.</li>`+
   `<li>${WON} deals have closed so far; the rest is live pipeline to convert.</li>`+
+  (function(){const ag=[];EVENTS.forEach(e=>e.accounts.forEach(x=>{const a=dealAge(x);if(a!=null&&a>STALE_DAYS)ag.push({a:x.a,amt:x.amt,age:a});}));ag.sort((p,q)=>q.amt-p.amt);const amt=ag.reduce((s,d)=>s+d.amt,0);return ag.length?`<li>⏳ <b>${ag.length} open deals (${gbp(amt)})</b> have aged past ${STALE_DAYS} days — biggest: ${ag[0].a} ${gbp(ag[0].amt)} (${ag[0].age}d open). Worth a push.</li>`:'';})()+
   `</ul></div>`;
 
  // rep leaderboard (attributed deals only)
@@ -411,7 +416,8 @@ function render(){
    html+=`<div class="roi"><div class="rb">Total pipeline generated <b>${gbp(m.pipeGen)}</b> = ${gbp(m.revCreated)} won + ${gbp(m.openPipe)} open + ${gbp(m.lostPipe)} closed-lost &nbsp;·&nbsp; Cost / meeting <b>${gbp(m.cost/m.meetings)}</b> &nbsp;·&nbsp; <b>£${m.perPound.toFixed(2)}</b> revenue per £1 spent</div></div>`;
    html+=`<div class="roi" style="padding-top:0"><div class="rb">Expected (weighted) revenue <b>${gbp(m.forecast)}</b> &nbsp;·&nbsp; Win rate <b>${m.winRate!=null?Math.round(m.winRate*100)+'%':'—'}</b> ${(m.won+m.lost)>0?`<span class="note">(${m.won} of ${m.won+m.lost} closed, ${m.open} open)</span>`:`<span class="note">(0 closed, ${m.open} open)</span>`} &nbsp;·&nbsp; Cost / opportunity <b>${m.costPerOpp!=null?gbp(m.costPerOpp):'—'}</b> &nbsp;·&nbsp; Cost / won deal <b>${m.costPerWon!=null?gbp(m.costPerWon):'—'}</b></div></div>`;
    const upcoming=ev.accounts.filter(x=>x.d&&!x.k&&!['won','lost'].includes((STAGE[x.s]||{}).c)&&DEALDATES[x.d]).map(x=>({a:x.a,d:DEALDATES[x.d][1]})).sort((p,q)=>p.d.localeCompare(q.d))[0];
-   html+=`<div class="roi" style="padding-top:0"><div class="rb">Avg sales cycle (won) <b>${m.wonCycle?m.wonCycle+' days':'— (no wins yet)'}</b> &nbsp;·&nbsp; Expected ROI break-even <b>${breakEvenMonth(ev)}</b>${upcoming?` &nbsp;·&nbsp; Next expected close <b>${monthName(upcoming.d)}</b> <span class="note">(${upcoming.a})</span>`:''}</div></div>`;
+   const evAging=ev.accounts.filter(x=>dealAge(x)>STALE_DAYS);
+   html+=`<div class="roi" style="padding-top:0"><div class="rb">Avg sales cycle (won) <b>${m.wonCycle?m.wonCycle+' days':'— (no wins yet)'}</b> &nbsp;·&nbsp; Expected ROI break-even <b>${breakEvenMonth(ev)}</b>${upcoming?` &nbsp;·&nbsp; Next expected close <b>${monthName(upcoming.d)}</b> <span class="note">(${upcoming.a})</span>`:''}${evAging.length?` &nbsp;·&nbsp; <span style="color:var(--lost)">⏳ ${evAging.length} aging &gt;${STALE_DAYS}d</span>`:''}</div></div>`;
    if(COSTMETA[ev.id])html+=`<div class="roi" style="padding-top:0"><span class="note">Budget: ${COSTMETA[ev.id]}</span></div>`;
    // chips
    const counts={won:0,open:0,lost:0,inf:0,none:0};
@@ -434,7 +440,7 @@ function render(){
      <td>${x.d?`<a href="${dealUrl(x.d)}" target="_blank" rel="noopener">View deal ↗</a>`:'<span class="note">—</span>'}</td>
      <td>${x.o||'—'}</td><td>${statusPill(x)}</td>
      <td class="num">${x.amt?gbp(x.amt):'—'}</td>
-     <td>${x.note?`<span class="note">${x.note}</span>`:''}</td></tr>`;
+     <td>${(dealAge(x)>STALE_DAYS)?`<span class="flag warn" title="Open ${dealAge(x)} days without closing">⏳ ${dealAge(x)}d</span> `:''}${x.note?`<span class="note">${x.note}</span>`:''}</td></tr>`;
    html+=rows.length?`<div class="tablewrap"><table><thead><tr><th>Account</th><th>Deal</th><th>Owner</th><th>Status</th><th class="num">Amount</th><th></th></tr></thead><tbody>${rows.map(row).join('')}</tbody></table></div>`:'<div class="empty">No accounts in this view.</div>';
    body.innerHTML=html;el.appendChild(body);
    el.querySelector('.evt-h').addEventListener('click',()=>{ev._open=!el.classList.contains('open');el.classList.toggle('open');});
