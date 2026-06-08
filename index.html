@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Event Performance — Userled</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.5.0/dist/chart.umd.js" integrity="sha384-iU8HYtnGQ8Cy4zl7gbNMOhsDTTKX02BTXptVP/vqAWIaTfM7isw76iyZCsjL2eVi" crossorigin="anonymous"></script>
+<style>
+:root{color-scheme:light;
+--bg:#f5f6fb;--card:#ffffff;--ink:#191b29;--muted:#6c7286;--faint:#9aa0b4;--line:#e9ebf3;
+--accent:#5b46ff;--accent-soft:#efecff;
+--won:#0f9d63;--won-bg:#e6f6ee;--open:#2563eb;--open-bg:#e9f0fe;
+--lost:#d14b3a;--lost-bg:#fbeae7;--inf:#8a6d12;--inf-bg:#fbf2dc;--none:#8b91a4;}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;font-size:14px;line-height:1.45}
+a{color:var(--open);text-decoration:none}a:hover{text-decoration:underline}
+.wrap{max-width:1120px;margin:0 auto;padding:24px 20px 70px}
+.head{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;flex-wrap:wrap}
+h1{font-size:23px;margin:0 0 3px;letter-spacing:-.01em}
+.sub{color:var(--muted);font-size:13px;margin:0;max-width:640px}
+.badge{font-size:11px;padding:3px 10px;border-radius:20px;background:#eceef6;color:var(--muted);white-space:nowrap}
+.badge.live{background:var(--won-bg);color:var(--won)}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(146px,1fr));gap:11px;margin:20px 0 6px}
+.kpi{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:13px 15px}
+.kpi .v{font-size:21px;font-weight:750;letter-spacing:-.02em}
+.kpi .l{color:var(--muted);font-size:11.5px;margin-top:3px}
+.kpi.hl{background:linear-gradient(180deg,#fbfaff,#fff);border-color:#d9d2ff}
+.kpi.hl .v{color:var(--accent)}
+.insight{display:flex;gap:12px;align-items:flex-start;background:linear-gradient(180deg,#fbfaff,#fff);border:1px solid #ded8ff;border-radius:14px;padding:13px 16px;margin-top:12px;font-size:13px;line-height:1.5}
+.insight .dot{font-size:16px;line-height:1.2}
+.insight b{color:var(--ink)}
+.ins-h{font-weight:700;margin-bottom:5px}
+.insight ul{margin:0;padding-left:17px}
+.insight li{margin:3px 0}
+.panel{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px 18px;margin-top:16px}
+.panel h3{margin:0 0 12px;font-size:12px;color:var(--muted);font-weight:650;text-transform:uppercase;letter-spacing:.05em}
+.legend{display:flex;gap:16px;flex-wrap:wrap;font-size:11.5px;color:var(--muted);margin-top:8px}
+.legend i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:5px;vertical-align:-1px}
+.evt{background:var(--card);border:1px solid var(--line);border-radius:16px;margin-top:12px;overflow:hidden;transition:box-shadow .15s}
+.evt.open{box-shadow:0 6px 28px -14px rgba(40,40,90,.28)}
+.evt-h{display:flex;align-items:center;gap:14px;padding:14px 18px;cursor:pointer;flex-wrap:wrap}
+.evt-h:hover{background:#fafbff}
+.evt-lead{display:flex;align-items:center;gap:11px;flex:1 1 230px;min-width:190px}
+.rank{font-size:16px;width:22px;text-align:center;flex:none}
+.evt-title{font-weight:700;font-size:15px;line-height:1.2}
+.evt-date{color:var(--faint);font-size:11.5px;font-weight:500;margin-top:1px}
+.evt-stats{display:flex;gap:22px;flex-wrap:wrap;align-items:center;margin-left:auto}
+.stat{text-align:right;min-width:52px}
+.stat .v{font-weight:700;font-size:14px;white-space:nowrap}
+.stat .l{color:var(--faint);font-size:10px;text-transform:uppercase;letter-spacing:.02em;white-space:nowrap}
+.stat .v.won{color:var(--won)}
+.stat .v.roi{color:var(--accent);font-weight:800}
+.chev{color:var(--faint);font-size:13px;flex:none;transition:transform .2s}
+.evt.open .chev{transform:rotate(90deg)}
+.body{display:none;border-top:1px solid var(--line)}
+.evt.open .body{display:block}
+.funnel{display:flex;gap:6px;padding:16px 18px 6px;flex-wrap:wrap;align-items:stretch}
+.fstep{flex:1;min-width:104px;background:#f7f8fd;border:1px solid var(--line);border-radius:11px;padding:10px 12px}
+.fstep .fv{font-size:18px;font-weight:750}
+.fstep .fl{color:var(--muted);font-size:10.5px;margin-top:1px}
+.fstep.won{background:var(--won-bg);border-color:#bfe6d2}
+.fstep.won .fv{color:var(--won)}
+.fcr{display:flex;align-items:center;color:var(--accent);font-weight:750;font-size:12px;padding:0 1px}
+.roi{display:flex;gap:14px;align-items:center;flex-wrap:wrap;padding:8px 18px 12px}
+.roi label{font-size:12px;color:var(--muted)}
+.roi input{width:118px;padding:6px 9px;border:1px solid var(--line);border-radius:8px;font-size:13px;margin-left:6px;font-variant-numeric:tabular-nums}
+.roi .rb b{color:var(--accent)}
+.chips{display:flex;gap:7px;flex-wrap:wrap;padding:4px 18px 12px;border-top:1px dashed var(--line)}
+.chip{font-size:12px;padding:5px 11px;border-radius:20px;border:1px solid var(--line);background:#fff;color:var(--muted);cursor:pointer;font-weight:600;user-select:none}
+.chip:hover{border-color:var(--accent);color:var(--accent)}
+.chip.on{background:var(--ink);color:#fff;border-color:var(--ink)}
+.chip .ct{opacity:.6;font-weight:600}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th,td{text-align:left;padding:8px 18px;border-top:1px solid var(--line);vertical-align:top}
+th{color:var(--muted);font-weight:600;font-size:10.5px;text-transform:uppercase;letter-spacing:.03em;background:#fafbff}
+td.num,th.num{text-align:right;font-variant-numeric:tabular-nums}
+.pill{display:inline-block;font-size:11px;padding:2px 8px;border-radius:20px;font-weight:600;white-space:nowrap}
+.p-won{background:var(--won-bg);color:var(--won)}.p-open{background:var(--open-bg);color:var(--open)}
+.p-lost{background:var(--lost-bg);color:var(--lost)}.p-inf{background:var(--inf-bg);color:var(--inf)}
+.p-none{background:#f0f1f6;color:var(--none)}
+.note{color:var(--faint);font-size:11px;font-style:italic}
+.foot{color:var(--muted);font-size:11.5px;margin-top:24px;line-height:1.7}
+.empty{padding:16px 18px;color:var(--faint);font-size:12.5px}
+.toolbar{display:flex;gap:12px;align-items:center;margin-top:18px;flex-wrap:wrap}
+.toolbar label{font-size:12px;color:var(--muted)}
+.toolbar select,.tbtn{padding:6px 10px;border:1px solid var(--line);border-radius:8px;background:#fff;font-size:13px;cursor:pointer;color:var(--ink)}
+.tbtn:hover{border-color:var(--accent);color:var(--accent)}
+.flag{font-size:10.5px;padding:2px 7px;border-radius:20px;font-weight:600;margin-left:7px;white-space:nowrap}
+.flag.warn{background:var(--lost-bg);color:var(--lost)}
+.flag.good{background:var(--won-bg);color:var(--won)}
+#owners table{margin-top:-2px}
+#owners td.num,#owners th.num{padding-right:0}
+@media(max-width:640px){.evt-stats{gap:14px 18px;margin-left:0;width:100%}.stat{text-align:left}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="head">
+    <div>
+      <h1>Sponsored Event Performance</h1>
+      <p class="sub">Six events, ranked by value generated. Meetings from #team_sales matched to HubSpot. Click any event to drill in; click a metric chip to filter. <span id="dataMode" class="badge">snapshot</span></p>
+    </div>
+    <span class="badge" id="updated"></span>
+  </div>
+
+  <div class="kpis" id="kpis"></div>
+  <div class="insight" id="insight"></div>
+
+  <div class="panel">
+    <h3>Pipeline generated by event — won, open & closed-lost + influenced (GBP)</h3>
+    <canvas id="bar" height="150"></canvas>
+    <div class="legend">
+      <span><i style="background:#0f9d63"></i>Revenue won (created)</span>
+      <span><i style="background:#8a6d12"></i>Revenue influenced</span>
+      <span><i style="background:#5b46ff"></i>Open pipeline</span>
+      <span><i style="background:#e3a9a0"></i>Closed lost</span>
+    </div>
+  </div>
+
+  <div class="panel"><h3>Rep performance — event-sourced deals</h3><div id="owners"></div></div>
+
+  <div class="toolbar">
+    <label>Sort events by
+      <select id="sortSel">
+        <option value="revenue">Revenue generated</option>
+        <option value="generated">Pipeline generated</option>
+        <option value="open">Open pipeline</option>
+        <option value="revroi">Revenue ROI</option>
+        <option value="winrate">Win rate</option>
+        <option value="meetings">Meetings</option>
+      </select>
+    </label>
+    <button id="expandAll" class="tbtn">Expand all</button>
+    <span class="note" style="margin-left:auto">Tip: click a bar in the chart to jump to that event</span>
+  </div>
+
+  <div id="events"></div>
+  <div class="foot" id="foot"></div>
+</div>
+
+<script>
+const PORTAL="26601753",REGION="app-eu1";
+const dealUrl=id=>`https://${REGION}.hubspot.com/contacts/${PORTAL}/record/0-3/${id}`;
+const acctUrl=n=>`https://${REGION}.hubspot.com/contacts/${PORTAL}/objects/0-2/views/all/list?query=${encodeURIComponent(n)}`;
+const MCP_TOOL="mcp__c34e6e55-fa86-485c-b431-f6f794e2deae__get_crm_objects";
+const STAGE={'453369561':{l:'Connected',c:'open'},'453369562':{l:'Discovery Call',c:'open'},'453369563':{l:'Demo Booked',c:'qual'},'987137259':{l:'Analysis',c:'qual'},'987137260':{l:'Pledge',c:'qual'},'453369564':{l:'Procurement',c:'qual'},'463138526':{l:'Contract Out',c:'qual'},'453369565':{l:'Closed Won',c:'won'},'453369567':{l:'Reach out later',c:'open'},'453369566':{l:'Closed Lost',c:'lost'},'1898711282':{l:'Rejected',c:'lost'},'2124887246':{l:'Opportunity identified',c:'open'},'2124894397':{l:'Analysis',c:'qual'},'2124887250':{l:'Pledge',c:'qual'},'2124887251':{l:'Closed Won',c:'won'},'2124887252':{l:'Closed Lost',c:'lost'}};
+// stage win-probabilities for weighted forecast
+const STAGEPROB={'453369561':.15,'453369562':.25,'453369563':.35,'987137259':.55,'987137260':.7,'453369564':.8,'463138526':.9,'453369567':.1,'2124887246':.15,'2124894397':.55,'2124887250':.7};
+
+const EVENTS=[
+ {id:'dbgo-nyc',name:'Demandbase GO NYC',date:'8 Oct 2025',accounts:[
+   {a:'Morgan Stanley',d:'329966975200',o:'Yann Sarfati',amt:300000,s:'453369563'},
+   {a:'Alkami',d:'335783752945',o:'Geneviève Ladouceur',amt:77000,s:'453369567'},
+   {a:'TeamViewer',d:'330577188055',o:'Geneviève Ladouceur',amt:77000,s:'453369567'},
+   {a:'Magnet Forensics',d:'333345308915',o:'Geneviève Ladouceur',amt:26950,s:'453369567'},
+   {a:'Datadog',d:'316483652841',o:'Yann Sarfati',amt:35000,s:'453369565',k:'sup',note:'Opp supported — closed won 11 Dec 2025, after the event (influenced)'},
+   {a:'Stripe',d:'369708045498',o:'Oliver Grogan',amt:170000,s:'2124887250',k:'sup',note:'Renewal opp supported — open existing business'},
+   {a:'Cloudflare'},{a:'Bandwidth'},{a:'Intelex'},{a:'Staples'},{a:'Pipeline360'},{a:'Actian'}]},
+ {id:'global-abm',name:'The Global ABM Conference',date:'5 Nov 2025',accounts:[
+   {a:'Zema Global',d:'366021245122',o:'James Johnson',amt:30000,s:'453369565'},
+   {a:'Tungsten Automation',d:'399854095567',o:'Geneviève Ladouceur',amt:30000,s:'453369567'},
+   {a:'BD',d:'420931862738',o:'Charlie Thomas',amt:60000,s:'453369566'},
+   {a:'Definely',d:'366031152324',o:'James Johnson',amt:20000,s:'453369566'},
+   {a:'Blue Yonder',d:'173783651523',o:'—',amt:57750,s:'453369567',k:'pre',note:'Pre-existing (created Apr 2025) — influenced pipeline'},
+   {a:'Vodafone'},{a:'Pure Storage'},{a:'Enspired'},{a:'NavTech'},{a:'Apteam'},{a:'LCP'}]},
+ {id:'vegas',name:'6sense Breakthrough (Vegas)',date:'11–14 Nov 2025',accounts:[
+   {a:'Corporate Visions',d:'378241198287',o:'Geneviève Ladouceur',amt:23100,s:'453369565'},
+   {a:'Tipalti',d:'387614352630',o:'Georgia Cohen',amt:31000,s:'453369565'},
+   {a:'Zylo',d:'398392988885',o:'Yann Sarfati',amt:24000,s:'453369565'},
+   {a:'DataArt',d:'393822250172',o:'Yann Sarfati',amt:30000,s:'453369565'},
+   {a:'CHG-MERIDIAN',d:'398391354606',o:'Yann Sarfati',amt:110000,s:'987137259'},
+   {a:'Ivanti',d:'406250946781',o:'Geneviève Ladouceur',amt:77000,s:'453369563'},
+   {a:'Lytx',d:'378158033122',o:'Geneviève Ladouceur',amt:77000,s:'453369567'},
+   {a:'Ping Identity',d:'397390221503',o:'Geneviève Ladouceur',amt:73150,s:'453369567'},
+   {a:'Varonis',d:'378153723079',o:'Yann Sarfati',amt:70000,s:'453369567'},
+   {a:'AvePoint',d:'416147351763',o:'Geneviève Ladouceur',amt:69300,s:'453369567'},
+   {a:'8x8',d:'420368749795',o:'Geneviève Ladouceur',amt:60000,s:'453369567',note:'Created 5 Jan — softer attribution'},
+   {a:'CSI',d:'387955466442',o:'Yann Sarfati',amt:57750,s:'453369563'},
+   {a:'iCIMS',d:'395075137737',o:'Geneviève Ladouceur',amt:57750,s:'453369563'},
+   {a:'Avetta',d:'403591192765',o:'Geneviève Ladouceur',amt:46200,s:'453369567'},
+   {a:'OFX',d:'380766456016',o:'Geneviève Ladouceur',amt:40000,s:'453369567'},
+   {a:'NAPA',d:'379995943127',o:'Geneviève Ladouceur',amt:38500,s:'453369567',note:'North American Partners in Anesthesia'},
+   {a:'LiveOps',d:'378158255325',o:'Geneviève Ladouceur',amt:38500,s:'453369567'},
+   {a:'Cohere',d:'377328056546',o:'Geneviève Ladouceur',amt:30800,s:'453369563'},
+   {a:'Xactly',d:'397554767043',o:'Yann Sarfati',amt:28000,s:'453369567'},
+   {a:'COMPLY',d:'380038852824',o:'Geneviève Ladouceur',amt:23100,s:'453369567'},
+   {a:'Cymulate',d:'380038852819',o:'Geneviève Ladouceur',amt:23100,s:'453369567'},
+   {a:'HackerOne',d:'380891409633',o:'Yann Sarfati',amt:20000,s:'453369563'},
+   {a:'LeanData',d:'387804961986',o:'Geneviève Ladouceur',amt:19250,s:'453369567'},
+   {a:'Yottaa',d:'379995943118',o:'Geneviève Ladouceur',amt:15400,s:'453369567'},
+   {a:'Qlik',d:'435514451158',o:'Yann Sarfati',amt:100000,s:'453369566'},
+   {a:'UKG',d:'387804976341',o:'James Johnson',amt:57750,s:'1898711282'},
+   {a:'Flexera',d:'396928803015',o:'Yann Sarfati',amt:46200,s:'453369566'},
+   {a:'PrimeRX',d:'379993823437',o:'Geneviève Ladouceur',amt:15400,s:'453369566'},
+   {a:'Coveo',d:'108998595824',o:'—',amt:60000,s:'1898711282',k:'pre',note:'Pre-existing (created Jan 2025)'},
+   {a:'Linksquares'},{a:'F12'},{a:'Ark Data'},{a:'Armanino'},{a:'Sumo Logic'},{a:'Lytho'},
+   {a:'Smarsh'},{a:'Okta'},{a:'Genesys'},{a:'All Covered'},{a:'SingleStore'},{a:'ServiceChannel'}]},
+ {id:'b2bmx',name:'B2BMX 2026',date:'~12 Mar 2026',accounts:[
+   {a:'UMB Bank',d:'494016766154',o:'Geneviève Ladouceur',amt:77000,s:'453369563'},
+   {a:'ESET',d:'495462575323',o:'Geneviève Ladouceur',amt:53900,s:'987137259'},
+   {a:'Ricoh',d:'501313876184',o:'Geneviève Ladouceur',amt:53900,s:'987137259',note:'Ricoh USA — created 30 Apr, ~7 wks post-event, softer attribution'},
+   {a:'Avalara',d:'78669620429',o:'—',amt:56000,s:'453369566',k:'pre',note:'Pre-existing (created Dec 2024)'},
+   {a:'Zscaler',d:'169336621270',o:'—',amt:30000,s:'453369566',k:'pre',note:'Pre-existing (created 2025)'},
+   {a:'Nobi'},{a:'Rubrik'},{a:'Maritz'},{a:'Cloudera'},{a:'NextUp'},{a:'FactSet'},{a:'Actian'},
+   {a:'Bazaarvoice'},{a:'Black & Veatch'},{a:'Indeed'},{a:'Visa'},{a:'Mobly'},{a:'Impel'},
+   {a:'Workleap'},{a:'Collibra'},{a:'Toptal'},{a:'Quantcast'},{a:'FourKites'},{a:'Lead Pipeline'},
+   {a:'Police'},{a:'Safety Management Group'}]},
+ {id:'forrester',name:'Forrester B2B Summit NA',date:'~28 Apr 2026',accounts:[
+   {a:'Honeywell',d:'501541966040',o:'Elliot Roberts',amt:77000,s:'987137259'},
+   {a:'Octave',d:'501728164051',o:'Georgia Cohen',amt:77000,s:'453369567'},
+   {a:'Candescent',d:'501727659218',o:'Georgia Cohen',amt:61600,s:'987137259'},
+   {a:'Wolters Kluwer',d:'502455187676',o:'Elliot Roberts',amt:38500,s:'453369563'},
+   {a:'Orange Logic',d:'504047119557',o:'Georgia Cohen',amt:26950,s:'987137259'},
+   {a:'RadarFirst',d:'504665213125',o:'Geneviève Ladouceur',amt:18480,s:'987137259'},
+   {a:'AppFolio',d:'231232889066',o:'—',amt:61600,s:'453369563',k:'pre',note:'Pre-existing (Jun 2025) — influenced pipeline'},
+   {a:'Smartly',d:'16029772489',o:'—',amt:60000,s:'453369563',k:'pre',note:'Pre-existing (Aug 2024) — influenced pipeline'},
+   {a:'Autodesk',d:'201351284922',o:'—',amt:100000,s:'453369566',k:'pre',note:'Pre-existing (May 2025) — lost'},
+   {a:'Quadient',d:'19725125102',o:'—',amt:50000,s:'453369566',k:'pre',note:'Pre-existing (Sep 2024) — lost'},
+   {a:'KnowBe4',d:'394705804475',o:'Geneviève Ladouceur',amt:19250,s:'453369566',k:'pre',note:'Pre-existing (Dec 2025) — lost'},
+   {a:'BDC'},{a:'Othello'},{a:'Ibotta'},{a:'Siemens'},{a:'SAS'},{a:'Datamatics'},{a:'Baseframe'},
+   {a:'Nasdaq'},{a:'CS Disco'},{a:'Guidewire'},{a:'Visa Direct'},{a:'Hexagon'},{a:'FNTS'},
+   {a:'Pricefx'},{a:'Accenture'},{a:'TrendAI'},{a:'Insperity'},{a:'Enta'},{a:'BOK Financial'},
+   {a:'Tag Video'},{a:'S2W Media'},{a:'Appspace'},{a:'ServiceChannel'},{a:'TriNet'},{a:'Boomi'},
+   {a:'TaskUs'},{a:'Kyndryl'},{a:'Evalueserve'},{a:'Keepit'},{a:'PTC'},{a:'FedEx'},{a:'Workday'},
+   {a:'Azuga'},{a:'Illumina'}]},
+ {id:'dbgo-london',name:'Demandbase GO London',date:'14 Apr 2026',accounts:[
+   {a:'TransUnion',d:'499838714070',o:'Georgia Cohen',amt:77000,s:'453369563'},
+   {a:'Stibo Systems',d:'500081958126',o:'Geneviève Ladouceur',amt:53900,s:'987137259'},
+   {a:'Korber Pharma',d:'502455050466',o:'Georgia Cohen',amt:40000,s:'987137259'},
+   {a:'Vodafone'},{a:'BSI'},{a:'SBS'},{a:'Fundapps'},{a:'Bleckmann'},{a:'Vixio'},
+   {a:'Domino Printing Services'},{a:'IFS'},{a:'SL Cyber'},{a:'Clientshare'},{a:'Aris Tech'},
+   {a:'Hansen Tech'},{a:'Telstra'},{a:'Duck Creek'},{a:'Tata Consultancy'},{a:'Cambri'},
+   {a:'Staffbase'},{a:'Experian'}]}
+];
+
+const FX=0.749;
+const COSTS={'dbgo-nyc':7490,'global-abm':8988,'vegas':31458,'b2bmx':13482,'forrester':17976,'dbgo-london':9363};
+const COSTMETA={'dbgo-nyc':'$10,000 silver rate × 0.749 = £7,490 (no travel uplift — see note)','global-abm':'$12,000 (London) × 0.749 = £8,988','vegas':'$35,000 + 20% travel = $42,000 × 0.749 = £31,458','b2bmx':'$15,000 bronze + 20% travel = $18,000 × 0.749 = £13,482','forrester':'$20,000 + 20% travel = $24,000 × 0.749 = £17,976','dbgo-london':'$12,500 (London) × 0.749 = £9,363'};
+
+const gbp=n=>'£'+Math.round(n).toLocaleString('en-GB');
+const cat=x=>!x.d?'none':(x.k?'inf':((STAGE[x.s]||{}).c||'open'));
+
+function metrics(ev){
+ let m={meetings:ev.accounts.length,opps:0,won:0,lost:0,open:0,qual:0,revCreated:0,openPipe:0,lostPipe:0,infRev:0,infPipe:0,weighted:0};
+ ev.accounts.forEach(x=>{
+   if(!x.d) return;
+   const c=(STAGE[x.s]||{}).c;
+   if(x.k){ if(c==='won')m.infRev+=x.amt; else if(c!=='lost')m.infPipe+=x.amt; return; }
+   m.opps++;
+   if(c==='won'){m.won++;m.revCreated+=x.amt;m.qual++;}
+   else if(c==='lost'){m.lost++;m.lostPipe+=x.amt;}
+   else {m.open++;m.openPipe+=x.amt; m.weighted+=x.amt*(STAGEPROB[x.s]||0.1); if(c==='qual')m.qual++;}
+ });
+ m.revGen=m.revCreated+m.infRev;          // closed-won the event created or influenced
+ m.pipeGen=m.revCreated+m.openPipe+m.lostPipe; // total new pipeline generated (won+open+lost)
+ m.forecast=m.revCreated+m.weighted;      // won + stage-weighted open
+ m.total=m.revGen+m.openPipe;
+ m.winRate=(m.won+m.lost)>0?m.won/(m.won+m.lost):null;
+ m.lossShare=m.pipeGen>0?m.lostPipe/m.pipeGen:0;
+ const c=COSTS[ev.id]||0; m.cost=c;
+ m.revRoi=c>0?m.revGen/c:null;            // headline
+ m.pipeRoi=c>0?m.openPipe/c:null;         // secondary
+ m.perPound=c>0?m.revGen/c:0;             // £ revenue per £1 spent
+ m.costPerOpp=m.opps>0?c/m.opps:null;
+ m.costPerWon=m.won>0?c/m.won:null;
+ return m;
+}
+
+function statusPill(x){
+ if(!x.d) return '<span class="pill p-none">No deal</span>';
+ const c=(STAGE[x.s]||{}).c,l=(STAGE[x.s]||{}).l||'—';
+ if(x.k) return `<span class="pill p-inf">${x.k==='sup'?'Supported':'Influenced'} · ${l}</span>`;
+ if(c==='won') return `<span class="pill p-won">Won · ${l}</span>`;
+ if(c==='lost') return `<span class="pill p-lost">${l}</span>`;
+ return `<span class="pill p-open">${l}</span>`;
+}
+
+let sortKey='revenue';
+const SORTFN={revenue:m=>m.revGen*1e9+m.openPipe,generated:m=>m.pipeGen,open:m=>m.openPipe,revroi:m=>m.revRoi||0,winrate:m=>m.winRate==null?-1:m.winRate,meetings:m=>m.meetings};
+const order=()=>{const f=SORTFN[sortKey]||SORTFN.revenue;return [...EVENTS].sort((a,b)=>f(metrics(b))-f(metrics(a)));};
+const MEDAL=['🥇','🥈','🥉'];
+
+function render(){
+ let M=0,O=0,RC=0,RI=0,PIPE=0,COST=0,WON=0,FCAST=0;
+ EVENTS.forEach(e=>{const m=metrics(e);M+=m.meetings;O+=m.opps;RC+=m.revCreated;RI+=m.infRev;PIPE+=m.openPipe;COST+=m.cost;WON+=m.won;FCAST+=m.forecast;});
+ const REVGEN=RC+RI;
+ const revRoi=COST>0?(REVGEN/COST).toFixed(1)+'×':'—';
+ const pipeRoi=COST>0?(PIPE/COST).toFixed(1)+'×':'—';
+ document.getElementById('kpis').innerHTML=[
+  ['Revenue generated',gbp(REVGEN),'hl'],['Revenue ROI',revRoi,'hl'],['Forecast (weighted)',gbp(FCAST),'hl'],
+  ['Open pipeline',gbp(PIPE),''],['Pipeline ROI',pipeRoi,''],
+  ['Total spend',gbp(COST),''],['Meetings → Opps',M+' → '+O,'']
+ ].map(k=>`<div class="kpi ${k[2]}"><div class="v">${k[1]}</div><div class="l">${k[0]}</div></div>`).join('');
+
+ // takeaway banner (revenue-first, bulleted)
+ const ord=order(),top=ord[0],tm=metrics(top);
+ document.getElementById('insight').innerHTML=`<span class="dot">💡</span><div><div class="ins-h">Program summary — 6 sponsored events</div><ul>`+
+  `<li><b>${gbp(REVGEN)}</b> closed-won revenue generated (${gbp(RC)} created + ${gbp(RI)} influenced) on <b>${gbp(COST)}</b> spend — a <b>${revRoi}</b> revenue return.</li>`+
+  `<li><b>${gbp(PIPE)}</b> open pipeline still in play — <b>${pipeRoi}</b> of pipeline coverage on spend.</li>`+
+  `<li><b>${top.name}</b> is the clear winner: ${gbp(tm.revGen)} won and ${gbp(tm.openPipe)} open pipeline.</li>`+
+  `<li>${WON} deals have closed so far; the rest is live pipeline to convert.</li>`+
+  `</ul></div>`;
+
+ // rep leaderboard (attributed deals only)
+ const OW={};
+ EVENTS.forEach(e=>e.accounts.forEach(x=>{
+   if(!x.d||x.k||!x.o||x.o==='—')return;
+   const c=(STAGE[x.s]||{}).c, r=OW[x.o]||(OW[x.o]={won:0,wonAmt:0,open:0,openAmt:0,lost:0,deals:0});
+   r.deals++;
+   if(c==='won'){r.won++;r.wonAmt+=x.amt;}
+   else if(c==='lost'){r.lost++;}
+   else {r.open++;r.openAmt+=x.amt;}
+ }));
+ const reps=Object.entries(OW).map(([n,r])=>({n,...r,wr:(r.won+r.lost)>0?r.won/(r.won+r.lost):null})).sort((a,b)=>b.wonAmt-a.wonAmt||b.openAmt-a.openAmt);
+ document.getElementById('owners').innerHTML=`<table><thead><tr><th>Rep</th><th class="num">Won</th><th class="num">Open pipeline</th><th class="num">Win rate</th><th class="num">Won · Lost · Open</th></tr></thead><tbody>`+
+   reps.map(r=>`<tr><td>${r.n}</td><td class="num">${r.wonAmt?gbp(r.wonAmt):'—'}</td><td class="num">${gbp(r.openAmt)}</td><td class="num">${r.wr!=null?Math.round(r.wr*100)+'% <span class="ct">('+r.won+' of '+(r.won+r.lost)+' closed)</span>':'<span class="note">no closed</span>'}</td><td class="num">${r.won} · ${r.lost} · ${r.open}</td></tr>`).join('')+
+   `</tbody></table><div class="note" style="padding:8px 18px 0">Win rate = won ÷ closed (won + lost); still-open deals are excluded — so small closed samples read high (e.g. 100% off one closed deal).</div>`;
+
+ const host=document.getElementById('events');host.innerHTML='';
+ order().forEach((ev,i)=>{
+   const m=metrics(ev);
+   const el=document.createElement('div');el.className='evt';el.id='evt-'+ev.id;if(ev._open)el.classList.add('open');
+   const rank=i<3?MEDAL[i]:(i+1);
+   const flag=m.lossShare>0.4?`<span class="flag warn">⚠ ${Math.round(m.lossShare*100)}% lost</span>`:(m.winRate!=null&&m.winRate>=0.5?`<span class="flag good">${Math.round(m.winRate*100)}% win</span>`:'');
+   el.innerHTML=`<div class="evt-h">
+     <div class="evt-lead"><div class="rank">${rank}</div><div><div class="evt-title">${ev.name}${flag}</div><div class="evt-date">${ev.date}</div></div></div>
+     <div class="evt-stats">
+       <div class="stat"><div class="v won">${gbp(m.revGen)}</div><div class="l">Revenue</div></div>
+       <div class="stat"><div class="v roi">${m.revRoi!=null?m.revRoi.toFixed(1)+'×':'—'}</div><div class="l">Rev ROI</div></div>
+       <div class="stat"><div class="v">${gbp(m.openPipe)}</div><div class="l">Open pipe</div></div>
+       <div class="stat"><div class="v">${m.pipeRoi!=null?m.pipeRoi.toFixed(1)+'×':'—'}</div><div class="l">Pipe ROI</div></div>
+       <div class="stat"><div class="v">${m.winRate!=null?Math.round(m.winRate*100)+'%':'—'}</div><div class="l">Win rate</div></div>
+       <div class="chev">▶</div>
+     </div></div>`;
+   // ---- body ----
+   const cr=(a,b)=>b?Math.round(a/b*100)+'%':'—';
+   const body=document.createElement('div');body.className='body';
+   let html=`<div class="funnel">
+     <div class="fstep"><div class="fv">${m.meetings}</div><div class="fl">Meetings booked</div></div>
+     <div class="fcr">${cr(m.opps,m.meetings)} ›</div>
+     <div class="fstep"><div class="fv">${m.opps}</div><div class="fl">Opportunities</div></div>
+     <div class="fcr">${cr(m.qual,m.opps)} ›</div>
+     <div class="fstep"><div class="fv">${m.qual}</div><div class="fl">Qualified (Demo+)</div></div>
+     <div class="fcr">${cr(m.won,m.opps)} ›</div>
+     <div class="fstep won"><div class="fv">${m.won}</div><div class="fl">Closed won</div></div>
+   </div>`;
+   html+=`<div class="roi"><div class="rb">Total pipeline generated <b>${gbp(m.pipeGen)}</b> = ${gbp(m.revCreated)} won + ${gbp(m.openPipe)} open + ${gbp(m.lostPipe)} closed-lost &nbsp;·&nbsp; Cost / meeting <b>${gbp(m.cost/m.meetings)}</b> &nbsp;·&nbsp; <b>£${m.perPound.toFixed(2)}</b> revenue per £1 spent</div></div>`;
+   html+=`<div class="roi" style="padding-top:0"><div class="rb">Expected (weighted) revenue <b>${gbp(m.forecast)}</b> &nbsp;·&nbsp; Win rate <b>${m.winRate!=null?Math.round(m.winRate*100)+'%':'—'}</b> ${(m.won+m.lost)>0?`<span class="note">(${m.won} of ${m.won+m.lost} closed, ${m.open} open)</span>`:`<span class="note">(0 closed, ${m.open} open)</span>`} &nbsp;·&nbsp; Cost / opportunity <b>${m.costPerOpp!=null?gbp(m.costPerOpp):'—'}</b> &nbsp;·&nbsp; Cost / won deal <b>${m.costPerWon!=null?gbp(m.costPerWon):'—'}</b></div></div>`;
+   if(COSTMETA[ev.id])html+=`<div class="roi" style="padding-top:0"><span class="note">Budget: ${COSTMETA[ev.id]}</span></div>`;
+   // chips
+   const counts={won:0,open:0,lost:0,inf:0,none:0};
+   ev.accounts.forEach(x=>counts[cat(x)]++);
+   const f=ev._filter||'att';
+   const chip=(key,label,n)=>`<span class="chip ${f===key?'on':''}" data-ev="${ev.id}" data-f="${key}">${label}${n!=null?` <span class="ct">${n}</span>`:''}</span>`;
+   html+=`<div class="chips">
+     ${chip('att','Created deals',counts.won+counts.open+counts.lost)}
+     ${chip('won','Won',counts.won)}
+     ${chip('open','Open',counts.open)}
+     ${chip('lost','Lost',counts.lost)}
+     ${chip('inf','Influenced / supported',counts.inf)}
+     ${chip('none','Met · no deal',counts.none)}
+   </div>`;
+   // table
+   const show=x=>{const ct=cat(x);if(f==='att')return ct==='won'||ct==='open'||ct==='lost';return ct===f;};
+   const rows=ev.accounts.filter(show);
+   const row=x=>`<tr>
+     <td><a href="${acctUrl(x.a)}" target="_blank" rel="noopener">${x.a}</a></td>
+     <td>${x.d?`<a href="${dealUrl(x.d)}" target="_blank" rel="noopener">View deal ↗</a>`:'<span class="note">—</span>'}</td>
+     <td>${x.o||'—'}</td><td>${statusPill(x)}</td>
+     <td class="num">${x.amt?gbp(x.amt):'—'}</td>
+     <td>${x.note?`<span class="note">${x.note}</span>`:''}</td></tr>`;
+   html+=rows.length?`<table><thead><tr><th>Account</th><th>Deal</th><th>Owner</th><th>Status</th><th class="num">Amount</th><th></th></tr></thead><tbody>${rows.map(row).join('')}</tbody></table>`:'<div class="empty">No accounts in this view.</div>';
+   body.innerHTML=html;el.appendChild(body);
+   el.querySelector('.evt-h').addEventListener('click',()=>{ev._open=!el.classList.contains('open');el.classList.toggle('open');});
+   host.appendChild(el);
+ });
+ host.querySelectorAll('.chip').forEach(ch=>ch.addEventListener('click',e=>{
+   const ev=EVENTS.find(x=>x.id===ch.dataset.ev);ev._filter=ch.dataset.f;ev._open=true;render();
+ }));
+ const ss=document.getElementById('sortSel');if(ss){ss.value=sortKey;ss.onchange=e=>{sortKey=e.target.value;render();};}
+ const ea=document.getElementById('expandAll');if(ea){const allOpen=EVENTS.every(e=>e._open);ea.textContent=allOpen?'Collapse all':'Expand all';ea.onclick=()=>{const open=!EVENTS.every(e=>e._open);EVENTS.forEach(e=>e._open=open);render();};}
+ drawChart();
+}
+
+let chart;
+function drawChart(){
+ const evs=order();
+ const labels=evs.map(e=>e.name.replace('The ','').replace(' (Vegas)','').replace(' Conference','').replace(' B2B Summit NA',''));
+ const ds=[
+  {label:'Revenue won (created)',data:evs.map(e=>metrics(e).revCreated),backgroundColor:'#0f9d63'},
+  {label:'Revenue influenced',data:evs.map(e=>metrics(e).infRev),backgroundColor:'#8a6d12'},
+  {label:'Open pipeline',data:evs.map(e=>metrics(e).openPipe),backgroundColor:'#5b46ff'},
+  {label:'Closed lost',data:evs.map(e=>metrics(e).lostPipe),backgroundColor:'#e3a9a0'}
+ ];
+ if(chart)chart.destroy();
+ chart=new Chart(document.getElementById('bar'),{type:'bar',data:{labels,datasets:ds},options:{
+   indexAxis:'y',responsive:true,
+   onClick:(e,els)=>{if(els.length){const ev=evs[els[0].index];ev._open=true;render();const n=document.getElementById('evt-'+ev.id);if(n)n.scrollIntoView({behavior:'smooth',block:'center'});}},
+   plugins:{legend:{display:false},tooltip:{callbacks:{
+     label:c=>`${c.dataset.label}: ${gbp(c.raw)}`,
+     afterLabel:c=>{const evTotal=ds.reduce((s,d)=>s+(d.data[c.dataIndex]||0),0);const dsTotal=c.dataset.data.reduce((s,v)=>s+v,0);const pe=evTotal?Math.round(c.raw/evTotal*100):0;const pp=dsTotal?Math.round(c.raw/dsTotal*100):0;return `${pe}% of this event · ${pp}% of program ${c.dataset.label.toLowerCase()}`;}
+   }}},
+   scales:{x:{stacked:true,ticks:{callback:v=>'£'+(v/1000)+'K'}},y:{stacked:true,ticks:{font:{size:11}}}}}});
+}
+
+async function refresh(){
+ const ids=[];EVENTS.forEach(e=>e.accounts.forEach(x=>{if(x.d)ids.push(Number(x.d))}));
+ try{
+   if(!window.cowork||!window.cowork.callMcpTool)throw 0;
+   const res=await window.cowork.callMcpTool(MCP_TOOL,{objectType:'deals',objectIds:ids,properties:['dealstage','amount_in_home_currency']});
+   let objs=res&&res.objects;
+   if(!objs&&typeof res==='string'){try{objs=JSON.parse(res).objects}catch(e){}}
+   if(!objs&&res&&res.content){const cc=Array.isArray(res.content)?res.content[0]:res.content;const t=cc&&cc.text?cc.text:cc;try{objs=JSON.parse(t).objects}catch(e){}}
+   if(!objs||!objs.length)throw 0;
+   const map={};objs.forEach(o=>map[String(o.id)]={s:o.properties.dealstage,amt:parseFloat(o.properties.amount_in_home_currency)});
+   EVENTS.forEach(e=>e.accounts.forEach(x=>{if(x.d&&map[x.d]){if(map[x.d].s)x.s=map[x.d].s;if(!isNaN(map[x.d].amt))x.amt=map[x.d].amt;}}));
+   const b=document.getElementById('dataMode');b.textContent='live · HubSpot';b.classList.add('live');
+   document.getElementById('updated').textContent='Refreshed '+new Date().toLocaleString('en-GB');
+   render();
+ }catch(e){
+   document.getElementById('dataMode').textContent='snapshot · 8 Jun 2026';
+   document.getElementById('updated').textContent='Static snapshot — open in Cowork for live data';
+ }
+}
+
+document.getElementById('foot').innerHTML=
+ '<b>Created</b> = HubSpot deal opened at the account on/after the event date. <b>Influenced / supported</b> = pre-existing deals the team engaged at the event (won = influenced revenue; open = influenced pipeline). Pre-existing & influenced deals are excluded from "created", pipeline and ROI. '+
+ '<br><b>Revenue ROI</b> (headline) = revenue generated ÷ spend. <b>Pipeline ROI</b> = open pipeline ÷ spend. '+
+ 'Budgets converted from USD to GBP @ 0.749 (8 Jun 2026); +20% travel & accommodation uplift on the non-London events (Vegas, B2BMX, Forrester). '+
+ 'Demandbase GO NYC is also outside London but left without uplift per your list — say the word to add it. '+
+ '<b>Forecast (weighted)</b> = won revenue + each open deal × its stage probability (Demo Booked 35%, Analysis 55%, Pledge 70%, Procurement 80%, Contract Out 90%, early/Reach-out-later 10–15%). <b>Win rate</b> = won ÷ (won + lost). The ⚠ flag marks events where closed-lost is >40% of pipeline generated. '+
+ 'A couple of deals (8x8, Ricoh) were created weeks post-event — softer attribution, flagged inline. '+
+ 'Meetings from #team_sales; deal data live from HubSpot.';
+
+render();refresh();
+</script>
+</body>
+</html>

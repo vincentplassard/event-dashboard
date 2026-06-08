@@ -1,0 +1,16 @@
+{
+  "name": "event-performance-dashboard",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Password-protected sponsored-event performance dashboard (Userled).",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.19.2"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
