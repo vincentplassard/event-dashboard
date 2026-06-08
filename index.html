@@ -81,6 +81,7 @@ td.num,th.num{text-align:right;font-variant-numeric:tabular-nums}
 .note{color:var(--faint);font-size:11px;font-style:italic}
 .foot{color:var(--muted);font-size:11.5px;margin-top:24px;line-height:1.7}
 .empty{padding:16px 18px;color:var(--faint);font-size:12.5px}
+.tablewrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
 .toolbar{display:flex;gap:12px;align-items:center;margin-top:18px;flex-wrap:wrap}
 .toolbar label{font-size:12px;color:var(--muted)}
 .toolbar select,.tbtn{padding:6px 10px;border:1px solid var(--line);border-radius:8px;background:#fff;font-size:13px;cursor:pointer;color:var(--ink)}
@@ -90,7 +91,31 @@ td.num,th.num{text-align:right;font-variant-numeric:tabular-nums}
 .flag.good{background:var(--won-bg);color:var(--won)}
 #owners table{margin-top:-2px}
 #owners td.num,#owners th.num{padding-right:0}
-@media(max-width:640px){.evt-stats{gap:14px 18px;margin-left:0;width:100%}.stat{text-align:left}}
+@media(max-width:640px){
+  .wrap{padding:16px 12px 50px}
+  h1{font-size:19px}
+  .sub{font-size:12.5px}
+  .kpis{grid-template-columns:repeat(2,1fr);gap:9px}
+  .kpi{padding:11px 12px;border-radius:12px}
+  .kpi .v{font-size:18px}
+  .charts,.panel{padding:14px 13px}
+  .insight{padding:12px 13px;font-size:12.5px}
+  .evt-h{gap:10px 8px;padding:13px 14px}
+  .evt-lead{flex:1 1 100%;min-width:0}
+  .evt-stats{margin-left:0;width:100%;display:grid;grid-template-columns:repeat(3,1fr);gap:11px 8px}
+  .evt-stats .chev{display:none}
+  .stat{text-align:left;min-width:0}
+  .stat .v{font-size:13px}
+  .funnel{padding:14px 14px 4px;gap:6px}
+  .fstep{min-width:84px;padding:9px 10px}
+  .fcr{font-size:11px}
+  .roi{padding:8px 14px 12px}
+  .roi .rb{font-size:12px}
+  .chips{padding:4px 14px 12px;gap:6px}
+  .chip{font-size:11.5px;padding:5px 9px}
+  th,td{padding:7px 12px;font-size:12px}
+  .toolbar{margin-top:14px}
+}
 </style>
 </head>
 <body>
@@ -114,6 +139,16 @@ td.num,th.num{text-align:right;font-variant-numeric:tabular-nums}
       <span><i style="background:#8a6d12"></i>Revenue influenced</span>
       <span><i style="background:#5b46ff"></i>Open pipeline</span>
       <span><i style="background:#e3a9a0"></i>Closed lost</span>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h3>Revenue timing — when event pipeline becomes cash (cumulative GBP)</h3>
+    <canvas id="timing" height="150"></canvas>
+    <div class="legend">
+      <span><i style="background:#0f9d63"></i>Realized (won)</span>
+      <span><i style="background:#5b46ff"></i>Projected (stage-weighted)</span>
+      <span><i style="background:#d14b3a"></i>Total spend — break-even</span>
     </div>
   </div>
 
@@ -146,6 +181,13 @@ const compUrl=id=>`https://${REGION}.hubspot.com/contacts/${PORTAL}/record/0-2/$
 // account name -> exact HubSpot company record id (resolved from CRM). Missing names fall back to search.
 const CID={"Morgan Stanley":"426313480385","Magnet Forensics":"426323167447","Alkami":"426211636450","TeamViewer":"426246986999","Datadog":"271854673097","Stripe":"425351407846","Cloudflare":"427080070344","Staples":"242737607921","Pipeline360":"98940728550","Actian":"426337406167","Zema Global":"12832330431","Tungsten Automation":"17127158214","BD":"13328854755","Definely":"110379459831","Blue Yonder":"13328731613","Vodafone":"426231183588","Enspired":"280214244580","LCP":"278191886526","Corporate Visions":"17647021253","Tipalti":"426336641227","Zylo":"7447658734","DataArt":"14938011880","CHG-MERIDIAN":"166413187286","Ivanti":"97461355706","Lytx":"427019299032","Ping Identity":"13366045387","Varonis":"426250409163","AvePoint":"7447680189","8x8":"426323236040","CSI":"135810797777","iCIMS":"426323265726","Avetta":"426313424115","OFX":"426266185965","NAPA":"267584322761","LiveOps":"267518749895","Cohere":"426323278067","Xactly":"314158620906","COMPLY":"14906511329","Cymulate":"426336815315","HackerOne":"308686652640","LeanData":"426169641179","Yottaa":"304494550240","Qlik":"9612774127","UKG":"97461401823","Flexera":"99576875243","PrimeRX":"303739150523","Coveo":"10497243637","Linksquares":"14886293487","Armanino":"267568104684","Sumo Logic":"12864686782","Smarsh":"86938458322","Genesys":"426336785643","All Covered":"135295106252","SingleStore":"426336625877","ServiceChannel":"425825877239","UMB Bank":"424834114803","ESET":"426337278192","Ricoh":"405711868140","Avalara":"426246989022","Zscaler":"425825108210","Nobi":"405898736855","Rubrik":"292160200930","Maritz":"99290815692","Cloudera":"426313480429","NextUp":"421712102635","FactSet":"426318298342","Bazaarvoice":"97461353684","Indeed":"256260744425","Visa":"426323211500","Mobly":"405793164537","Impel":"7448180159","Workleap":"426336631021","Collibra":"426318293224","Toptal":"82758470884","Quantcast":"421432226029","FourKites":"426335993041","Safety Management Group":"421668751573","Honeywell":"426316472559","Octave":"424182293725","Wolters Kluwer":"427001238763","Orange Logic":"14836897997","RadarFirst":"248952259816","AppFolio":"426337385715","Smartly":"426336572635","Autodesk":"426323291347","Quadient":"426323278029","KnowBe4":"16621038825","Othello":"428618066168","Ibotta":"426960730323","Siemens":"426967460070","SAS":"76767067380","Datamatics":"12868830967","Baseframe":"428597780687","Nasdaq":"77401110733","Guidewire":"426990585048","Hexagon":"98965124333","FNTS":"428501852351","Pricefx":"9486455003","Insperity":"18448647147","BOK Financial":"428867265745","Boomi":"427013903587","TaskUs":"427004983511","Kyndryl":"16968587973","Evalueserve":"428781491407","Keepit":"427041432820","PTC":"426313563357","FedEx":"11632092391","Workday":"425826554095","Illumina":"428879405274","Stibo Systems":"182100639992","Korber Pharma":"424391340251","TransUnion":"426338739443","BSI":"426323162340","SBS":"288749009089","IFS":"426338457831","Cambri":"425824628937","Clientshare":"7591352051","Bleckmann":"424409759986","Hansen Tech":"431976660161","Telstra":"256236755144","Tata Consultancy":"7573107662","Staffbase":"426323139811","Experian":"426318286025"};
 const acctLink=n=>CID[n]?compUrl(CID[n]):acctUrl(n);
+// deal id -> [created, close/expected-close] (YYYY-MM-DD). Open deals use HubSpot's expected close date.
+const DEALDATES={"329966975200":["2025-10-10","2027-01-20"],"335783752945":["2025-10-17","2026-01-12"],"330577188055":["2025-10-13","2026-02-07"],"333345308915":["2025-10-14","2026-03-17"],"316483652841":["2025-09-29","2025-12-11"],"369708045498":["2025-11-10","2026-06-30"],"366021245122":["2025-11-07","2025-12-16"],"399854095567":["2025-12-08","2026-05-04"],"420931862738":["2026-01-06","2026-01-22"],"366031152324":["2025-11-07","2025-12-17"],"173783651523":["2025-04-08","2026-06-30"],"378241198287":["2025-11-19","2025-12-15"],"387614352630":["2025-11-26","2026-04-30"],"398392988885":["2025-12-05","2025-12-19"],"393822250172":["2025-12-01","2026-03-11"],"398391354606":["2025-12-04","2026-12-23"],"406250946781":["2025-12-12","2026-09-30"],"378158033122":["2025-11-18","2026-01-26"],"397390221503":["2025-12-04","2026-03-30"],"378153723079":["2025-11-18","2026-02-20"],"416147351763":["2025-12-22","2026-03-22"],"420368749795":["2026-01-05","2026-05-18"],"387955466442":["2025-11-26","2027-04-08"],"395075137737":["2025-12-02","2027-03-10"],"403591192765":["2025-12-09","2026-04-08"],"380766456016":["2025-11-21","2026-05-04"],"379995943127":["2025-11-20","2026-01-26"],"378158255325":["2025-11-19","2026-04-20"],"377328056546":["2025-11-17","2027-02-22"],"397554767043":["2025-12-04","2026-02-12"],"380038852824":["2025-11-20","2026-01-22"],"380038852819":["2025-11-20","2026-01-07"],"380891409633":["2025-11-21","2026-10-07"],"387804961986":["2025-11-28","2026-01-26"],"379995943118":["2025-11-20","2026-04-12"],"435514451158":["2026-01-14","2026-03-27"],"387804976341":["2025-11-28","2026-03-31"],"396928803015":["2025-12-03","2026-03-27"],"379993823437":["2025-11-21","2026-01-10"],"108998595824":["2025-01-24","2025-05-31"],"494016766154":["2026-03-18","2026-10-31"],"495462575323":["2026-03-25","2026-09-30"],"501313876184":["2026-04-30","2026-10-31"],"78669620429":["2024-12-19","2025-05-30"],"169336621270":["2025-04-03","2025-04-10"],"501541966040":["2026-05-06","2026-07-31"],"501728164051":["2026-05-05","2026-06-02"],"501727659218":["2026-05-06","2026-07-31"],"502455187676":["2026-05-14","2026-07-31"],"504047119557":["2026-05-21","2026-07-31"],"504665213125":["2026-05-29","2026-06-30"],"231232889066":["2025-06-06","2026-12-31"],"16029772489":["2024-08-07","2026-10-31"],"201351284922":["2025-05-08","2025-12-03"],"19725125102":["2024-09-25","2025-01-21"],"394705804475":["2025-12-02","2026-03-24"],"499838714070":["2026-04-23","2026-10-31"],"500081958126":["2026-04-24","2026-07-31"],"502455050466":["2026-05-13","2026-10-31"]};
+const DAY=86400000;
+const days=(a,b)=>(a&&b)?Math.round((new Date(b)-new Date(a))/DAY):null;
+const mKey=d=>d?d.slice(0,7):null;
+const MON=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+const monthName=d=>{const s=d.slice(0,7),[y,m]=s.split('-');return MON[+m-1]+" '"+y.slice(2);};
 const MCP_TOOL="mcp__c34e6e55-fa86-485c-b431-f6f794e2deae__get_crm_objects";
 const STAGE={'453369561':{l:'Connected',c:'open'},'453369562':{l:'Discovery Call',c:'open'},'453369563':{l:'Demo Booked',c:'qual'},'987137259':{l:'Analysis',c:'qual'},'987137260':{l:'Pledge',c:'qual'},'453369564':{l:'Procurement',c:'qual'},'463138526':{l:'Contract Out',c:'qual'},'453369565':{l:'Closed Won',c:'won'},'453369567':{l:'Reach out later',c:'open'},'453369566':{l:'Closed Lost',c:'lost'},'1898711282':{l:'Rejected',c:'lost'},'2124887246':{l:'Opportunity identified',c:'open'},'2124894397':{l:'Analysis',c:'qual'},'2124887250':{l:'Pledge',c:'qual'},'2124887251':{l:'Closed Won',c:'won'},'2124887252':{l:'Closed Lost',c:'lost'}};
 // stage win-probabilities for weighted forecast
@@ -246,13 +288,13 @@ const gbp=n=>'£'+Math.round(n).toLocaleString('en-GB');
 const cat=x=>{if(!x.d)return 'none';if(x.k)return 'inf';const c=(STAGE[x.s]||{}).c;return c==='won'?'won':(c==='lost'?'lost':'open');};
 
 function metrics(ev){
- let m={meetings:ev.accounts.length,opps:0,won:0,lost:0,open:0,qual:0,revCreated:0,openPipe:0,lostPipe:0,infRev:0,infPipe:0,weighted:0};
+ let m={meetings:ev.accounts.length,opps:0,won:0,lost:0,open:0,qual:0,revCreated:0,openPipe:0,lostPipe:0,infRev:0,infPipe:0,weighted:0,_cy:[]};
  ev.accounts.forEach(x=>{
    if(!x.d) return;
    const c=(STAGE[x.s]||{}).c;
    if(x.k){ if(c==='won')m.infRev+=x.amt; else if(c!=='lost')m.infPipe+=x.amt; return; }
    m.opps++;
-   if(c==='won'){m.won++;m.revCreated+=x.amt;m.qual++;}
+   if(c==='won'){m.won++;m.revCreated+=x.amt;m.qual++; const dd=DEALDATES[x.d]; if(dd){const n=days(dd[0],dd[1]); if(n!=null)m._cy.push(n);}}
    else if(c==='lost'){m.lost++;m.lostPipe+=x.amt;}
    else {m.open++;m.openPipe+=x.amt; m.weighted+=x.amt*(STAGEPROB[x.s]||0.1); if(c==='qual')m.qual++;}
  });
@@ -268,7 +310,22 @@ function metrics(ev){
  m.perPound=c>0?m.revGen/c:0;             // £ revenue per £1 spent
  m.costPerOpp=m.opps>0?c/m.opps:null;
  m.costPerWon=m.won>0?c/m.won:null;
+ m.wonCycle=m._cy.length?Math.round(m._cy.reduce((a,b)=>a+b,0)/m._cy.length):null;
  return m;
+}
+
+// month when cumulative (won + stage-weighted forecast) revenue for an event passes its cost
+function breakEvenMonth(ev){
+ const cost=COSTS[ev.id]||0; if(!cost) return '—';
+ const buckets={};
+ ev.accounts.forEach(x=>{ if(!x.d) return; const c=(STAGE[x.s]||{}).c, dd=DEALDATES[x.d]; if(!dd) return;
+   if(x.k){ if(c==='won'){const k=mKey(dd[1]); buckets[k]=(buckets[k]||0)+x.amt;} return; }
+   if(c==='won'){const k=mKey(dd[1]); buckets[k]=(buckets[k]||0)+x.amt;}
+   else if(c!=='lost'){const k=mKey(dd[1]); buckets[k]=(buckets[k]||0)+x.amt*(STAGEPROB[x.s]||0.1);}
+ });
+ const ms=Object.keys(buckets).sort(); let cum=0;
+ for(const k of ms){cum+=buckets[k]; if(cum>=cost) return monthName(k+'-01');}
+ return 'beyond forecast';
 }
 
 function statusPill(x){
@@ -291,10 +348,12 @@ function render(){
  const REVGEN=RC+RI;
  const revRoi=COST>0?(REVGEN/COST).toFixed(1)+'×':'—';
  const pipeRoi=COST>0?(PIPE/COST).toFixed(1)+'×':'—';
+ const allCy=[];EVENTS.forEach(e=>{allCy.push(...metrics(e)._cy);});
+ const avgCycle=allCy.length?Math.round(allCy.reduce((a,b)=>a+b,0)/allCy.length):null;
  document.getElementById('kpis').innerHTML=[
   ['Revenue generated',gbp(REVGEN),'hl'],['Revenue ROI',revRoi,'hl'],['Forecast (weighted)',gbp(FCAST),'hl'],
-  ['Open pipeline',gbp(PIPE),''],['Pipeline ROI',pipeRoi,''],
-  ['Total spend',gbp(COST),''],['Meetings → Opps',M+' → '+O,'']
+  ['Open pipeline',gbp(PIPE),''],['Pipeline ROI',pipeRoi,''],['Total spend',gbp(COST),''],
+  ['Avg cycle (won)',avgCycle?avgCycle+' days':'—',''],['Meetings → Opps',M+' → '+O,'']
  ].map(k=>`<div class="kpi ${k[2]}"><div class="v">${k[1]}</div><div class="l">${k[0]}</div></div>`).join('');
 
  // takeaway banner (revenue-first, bulleted)
@@ -317,9 +376,9 @@ function render(){
    else {r.open++;r.openAmt+=x.amt;}
  }));
  const reps=Object.entries(OW).map(([n,r])=>({n,...r,wr:(r.won+r.lost)>0?r.won/(r.won+r.lost):null})).sort((a,b)=>b.wonAmt-a.wonAmt||b.openAmt-a.openAmt);
- document.getElementById('owners').innerHTML=`<table><thead><tr><th>Rep</th><th class="num">Won</th><th class="num">Open pipeline</th><th class="num">Win rate</th><th class="num">Won · Lost · Open</th></tr></thead><tbody>`+
+ document.getElementById('owners').innerHTML=`<div class="tablewrap"><table><thead><tr><th>Rep</th><th class="num">Won</th><th class="num">Open pipeline</th><th class="num">Win rate</th><th class="num">Won · Lost · Open</th></tr></thead><tbody>`+
    reps.map(r=>`<tr><td>${r.n}</td><td class="num">${r.wonAmt?gbp(r.wonAmt):'—'}</td><td class="num">${gbp(r.openAmt)}</td><td class="num">${r.wr!=null?Math.round(r.wr*100)+'% <span class="ct">('+r.won+' of '+(r.won+r.lost)+' closed)</span>':'<span class="note">no closed</span>'}</td><td class="num">${r.won} · ${r.lost} · ${r.open}</td></tr>`).join('')+
-   `</tbody></table><div class="note" style="padding:8px 18px 0">Win rate = won ÷ closed (won + lost); still-open deals are excluded — so small closed samples read high (e.g. 100% off one closed deal).</div>`;
+   `</tbody></table></div><div class="note" style="padding:8px 18px 0">Win rate = won ÷ closed (won + lost); still-open deals are excluded — so small closed samples read high (e.g. 100% off one closed deal).</div>`;
 
  const host=document.getElementById('events');host.innerHTML='';
  order().forEach((ev,i)=>{
@@ -351,6 +410,8 @@ function render(){
    </div>`;
    html+=`<div class="roi"><div class="rb">Total pipeline generated <b>${gbp(m.pipeGen)}</b> = ${gbp(m.revCreated)} won + ${gbp(m.openPipe)} open + ${gbp(m.lostPipe)} closed-lost &nbsp;·&nbsp; Cost / meeting <b>${gbp(m.cost/m.meetings)}</b> &nbsp;·&nbsp; <b>£${m.perPound.toFixed(2)}</b> revenue per £1 spent</div></div>`;
    html+=`<div class="roi" style="padding-top:0"><div class="rb">Expected (weighted) revenue <b>${gbp(m.forecast)}</b> &nbsp;·&nbsp; Win rate <b>${m.winRate!=null?Math.round(m.winRate*100)+'%':'—'}</b> ${(m.won+m.lost)>0?`<span class="note">(${m.won} of ${m.won+m.lost} closed, ${m.open} open)</span>`:`<span class="note">(0 closed, ${m.open} open)</span>`} &nbsp;·&nbsp; Cost / opportunity <b>${m.costPerOpp!=null?gbp(m.costPerOpp):'—'}</b> &nbsp;·&nbsp; Cost / won deal <b>${m.costPerWon!=null?gbp(m.costPerWon):'—'}</b></div></div>`;
+   const upcoming=ev.accounts.filter(x=>x.d&&!x.k&&!['won','lost'].includes((STAGE[x.s]||{}).c)&&DEALDATES[x.d]).map(x=>({a:x.a,d:DEALDATES[x.d][1]})).sort((p,q)=>p.d.localeCompare(q.d))[0];
+   html+=`<div class="roi" style="padding-top:0"><div class="rb">Avg sales cycle (won) <b>${m.wonCycle?m.wonCycle+' days':'— (no wins yet)'}</b> &nbsp;·&nbsp; Expected ROI break-even <b>${breakEvenMonth(ev)}</b>${upcoming?` &nbsp;·&nbsp; Next expected close <b>${monthName(upcoming.d)}</b> <span class="note">(${upcoming.a})</span>`:''}</div></div>`;
    if(COSTMETA[ev.id])html+=`<div class="roi" style="padding-top:0"><span class="note">Budget: ${COSTMETA[ev.id]}</span></div>`;
    // chips
    const counts={won:0,open:0,lost:0,inf:0,none:0};
@@ -374,7 +435,7 @@ function render(){
      <td>${x.o||'—'}</td><td>${statusPill(x)}</td>
      <td class="num">${x.amt?gbp(x.amt):'—'}</td>
      <td>${x.note?`<span class="note">${x.note}</span>`:''}</td></tr>`;
-   html+=rows.length?`<table><thead><tr><th>Account</th><th>Deal</th><th>Owner</th><th>Status</th><th class="num">Amount</th><th></th></tr></thead><tbody>${rows.map(row).join('')}</tbody></table>`:'<div class="empty">No accounts in this view.</div>';
+   html+=rows.length?`<div class="tablewrap"><table><thead><tr><th>Account</th><th>Deal</th><th>Owner</th><th>Status</th><th class="num">Amount</th><th></th></tr></thead><tbody>${rows.map(row).join('')}</tbody></table></div>`:'<div class="empty">No accounts in this view.</div>';
    body.innerHTML=html;el.appendChild(body);
    el.querySelector('.evt-h').addEventListener('click',()=>{ev._open=!el.classList.contains('open');el.classList.toggle('open');});
    host.appendChild(el);
@@ -384,7 +445,34 @@ function render(){
  }));
  const ss=document.getElementById('sortSel');if(ss){ss.value=sortKey;ss.onchange=e=>{sortKey=e.target.value;render();};}
  const ea=document.getElementById('expandAll');if(ea){const allOpen=EVENTS.every(e=>e._open);ea.textContent=allOpen?'Collapse all':'Expand all';ea.onclick=()=>{const open=!EVENTS.every(e=>e._open);EVENTS.forEach(e=>e._open=open);render();};}
- drawChart();
+ drawChart();drawTiming();
+}
+
+let tchart;
+function drawTiming(){
+ const real={}, proj={};
+ EVENTS.forEach(e=>e.accounts.forEach(x=>{
+   if(!x.d) return; const c=(STAGE[x.s]||{}).c, dd=DEALDATES[x.d]; if(!dd) return;
+   if(x.k){ if(c==='won'){const k=mKey(dd[1]); real[k]=(real[k]||0)+x.amt; proj[k]=(proj[k]||0)+x.amt;} return; }
+   if(c==='won'){const k=mKey(dd[1]); real[k]=(real[k]||0)+x.amt; proj[k]=(proj[k]||0)+x.amt;}
+   else if(c!=='lost'){const k=mKey(dd[1]); proj[k]=(proj[k]||0)+x.amt*(STAGEPROB[x.s]||0.1);}
+ }));
+ const keys=Object.keys({...real,...proj}).filter(Boolean).sort();
+ if(!keys.length) return;
+ let [y,mo]=keys[0].split('-').map(Number); const [ey,em]=keys[keys.length-1].split('-').map(Number);
+ const months=[]; while(y<ey||(y===ey&&mo<=em)){months.push(`${y}-${String(mo).padStart(2,'0')}`); if(++mo>12){mo=1;y++;}}
+ let cr=0,cp=0; const realCum=[],projCum=[];
+ months.forEach(k=>{cr+=real[k]||0; cp+=proj[k]||0; realCum.push(Math.round(cr)); projCum.push(Math.round(cp));});
+ const spend=Object.values(COSTS).reduce((a,b)=>a+b,0);
+ const labels=months.map(k=>monthName(k+'-01'));
+ if(tchart)tchart.destroy();
+ tchart=new Chart(document.getElementById('timing'),{type:'line',data:{labels,datasets:[
+   {label:'Projected (weighted)',data:projCum,borderColor:'#5b46ff',backgroundColor:'rgba(91,70,255,.08)',fill:true,tension:.25,pointRadius:2,borderWidth:2},
+   {label:'Realized (won)',data:realCum,borderColor:'#0f9d63',backgroundColor:'rgba(15,157,99,.12)',fill:true,tension:.25,pointRadius:2,borderWidth:2},
+   {label:'Total spend',data:months.map(()=>spend),borderColor:'#d14b3a',borderDash:[5,4],pointRadius:0,fill:false,borderWidth:1.5}
+ ]},options:{responsive:true,interaction:{mode:'index',intersect:false},
+   plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>c.dataset.label+': '+gbp(c.raw)}}},
+   scales:{y:{ticks:{callback:v=>'£'+(v/1000)+'K'}},x:{ticks:{font:{size:10},maxRotation:0,autoSkip:true,maxTicksLimit:9}}}}});
 }
 
 let chart;
