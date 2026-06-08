@@ -249,6 +249,7 @@ const EVENTS=[
    {a:'UMB Bank',d:'494016766154',o:'Geneviève Ladouceur',amt:77000,s:'453369563'},
    {a:'ESET',d:'495462575323',o:'Geneviève Ladouceur',amt:53900,s:'987137259'},
    {a:'Ricoh',d:'501313876184',o:'Geneviève Ladouceur',amt:53900,s:'987137259',note:'Ricoh USA — created 30 Apr, ~7 wks post-event, softer attribution'},
+   {a:'Salesloft',d:'502091858131',o:'Geneviève Ladouceur',amt:53900,s:'453369565',note:'Closed won — also supported at Forrester'},
    {a:'Avalara',d:'78669620429',o:'—',amt:56000,s:'453369566',k:'pre',note:'Pre-existing (created Dec 2024)'},
    {a:'Zscaler',d:'169336621270',o:'—',amt:30000,s:'453369566',k:'pre',note:'Pre-existing (created 2025)'},
    {a:'Nobi'},{a:'Rubrik'},{a:'Maritz'},{a:'Cloudera'},{a:'NextUp'},{a:'FactSet'},{a:'Actian'},
@@ -262,7 +263,7 @@ const EVENTS=[
    {a:'Wolters Kluwer',d:'502455187676',o:'Elliot Roberts',amt:38500,s:'453369563'},
    {a:'Orange Logic',d:'504047119557',o:'Georgia Cohen',amt:26950,s:'987137259'},
    {a:'RadarFirst',d:'504665213125',o:'Geneviève Ladouceur',amt:18480,s:'987137259'},
-   {a:'Salesloft',d:'502091858131',o:'Geneviève Ladouceur',amt:53900,s:'453369565'},
+   {a:'Salesloft',d:'502091858131',o:'Geneviève Ladouceur',amt:53900,s:'453369565',k:'sup',xref:true,note:'Supported at Forrester — sourced & won via B2BMX (counted there)'},
    {a:'AppFolio',d:'231232889066',o:'—',amt:61600,s:'453369563',k:'pre',note:'Pre-existing (Jun 2025) — influenced pipeline'},
    {a:'Smartly',d:'16029772489',o:'—',amt:60000,s:'453369563',k:'pre',note:'Pre-existing (Aug 2024) — influenced pipeline'},
    {a:'Autodesk',d:'201351284922',o:'—',amt:100000,s:'453369566',k:'pre',note:'Pre-existing (May 2025) — lost'},
@@ -297,7 +298,7 @@ function metrics(ev){
  ev.accounts.forEach(x=>{
    if(!x.d) return;
    const c=(STAGE[x.s]||{}).c;
-   if(x.k){ if(c==='won')m.infRev+=x.amt; else if(c!=='lost')m.infPipe+=x.amt; return; }
+   if(x.k){ if(!x.xref){ if(c==='won')m.infRev+=x.amt; else if(c!=='lost')m.infPipe+=x.amt; } return; }
    m.opps++;
    if(c==='won'){m.won++;m.revCreated+=x.amt;m.qual++; const dd=DEALDATES[x.d]; if(dd){const n=days(dd[0],dd[1]); if(n!=null)m._cy.push(n);}}
    else if(c==='lost'){m.lost++;m.lostPipe+=x.amt;}
@@ -324,7 +325,7 @@ function breakEvenMonth(ev){
  const cost=COSTS[ev.id]||0; if(!cost) return '—';
  const buckets={};
  ev.accounts.forEach(x=>{ if(!x.d) return; const c=(STAGE[x.s]||{}).c, dd=DEALDATES[x.d]; if(!dd) return;
-   if(x.k){ if(c==='won'){const k=mKey(dd[1]); buckets[k]=(buckets[k]||0)+x.amt;} return; }
+   if(x.xref) return; if(x.k){ if(c==='won'){const k=mKey(dd[1]); buckets[k]=(buckets[k]||0)+x.amt;} return; }
    if(c==='won'){const k=mKey(dd[1]); buckets[k]=(buckets[k]||0)+x.amt;}
    else if(c!=='lost'){const k=mKey(dd[1]); buckets[k]=(buckets[k]||0)+x.amt*(STAGEPROB[x.s]||0.1);}
  });
@@ -460,7 +461,7 @@ function drawTiming(){
  const real={}, proj={};
  EVENTS.forEach(e=>e.accounts.forEach(x=>{
    if(!x.d) return; const c=(STAGE[x.s]||{}).c, dd=DEALDATES[x.d]; if(!dd) return;
-   if(x.k){ if(c==='won'){const k=mKey(dd[1]); real[k]=(real[k]||0)+x.amt; proj[k]=(proj[k]||0)+x.amt;} return; }
+   if(x.xref) return; if(x.k){ if(c==='won'){const k=mKey(dd[1]); real[k]=(real[k]||0)+x.amt; proj[k]=(proj[k]||0)+x.amt;} return; }
    if(c==='won'){const k=mKey(dd[1]); real[k]=(real[k]||0)+x.amt; proj[k]=(proj[k]||0)+x.amt;}
    else if(c!=='lost'){const k=mKey(dd[1]); proj[k]=(proj[k]||0)+x.amt*(STAGEPROB[x.s]||0.1);}
  }));
